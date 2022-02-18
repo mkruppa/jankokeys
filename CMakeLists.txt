@@ -4,7 +4,15 @@ project(jankokeys LANGUAGES C)
 set(CMAKE_C_FLAGS "-Wall -Wextra -Werror -O2")
 
 find_package(ALSA REQUIRED)
+find_package(Lua REQUIRED)
 
-add_executable(${PROJECT_NAME} src/main.c src/alsa_seq.c)
+include_directories(${LUA_INCLUDE_DIR})
 
-target_link_libraries(${PROJECT_NAME} ALSA::ALSA)
+add_executable(${PROJECT_NAME}
+	src/main.c
+	src/alsa_seq.c
+	src/config.c)
+
+target_link_libraries(${PROJECT_NAME}
+	ALSA::ALSA
+	${LUA_LIBRARIES})
