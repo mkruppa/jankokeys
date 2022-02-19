@@ -1,8 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
+// #include <stdio.h>
+// #include <stdlib.h>
 
 // #include "alsa_seq.h"
-#include "config.h"
+// #include "config.h"
+#include "window.h"
 
 int main(void)
 {
@@ -17,17 +18,23 @@ int main(void)
 
 	// midi_seq_port_destroy(seq, port_id);
 	// midi_seq_client_close(seq);
+
+
+	// int keybinding[NUM_SCANCODES] = {0};
+	// if (!config_load(keybinding)) {
+	// 	exit(EXIT_FAILURE);
+	// }
+
+	// for (int i = 0; i < NUM_SCANCODES; ++i) {
+	// 	if(keybinding[i] != 0) {
+	// 		printf("%d: %d\n", i, keybinding[i]);
+	// 	}
+	// }
+
+
+	window_t win;
+	if (window_create(&win, "jankokeys", 600, 400)) { window_run(&win); }
+	window_destroy(&win);
 	
-	int keybinding[NUM_SCANCODES] = {0};
-	if (!config_load(keybinding)) {
-		exit(EXIT_FAILURE);
-	}
-
-	for (int i = 0; i < NUM_SCANCODES; ++i) {
-		if(keybinding[i] != 0) {
-			printf("%d: %d\n", i, keybinding[i]);
-		}
-	}
-
 	return EXIT_SUCCESS;
 }
