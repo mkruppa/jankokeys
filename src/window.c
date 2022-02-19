@@ -44,29 +44,31 @@ bool window_sdl_window_check_gl_attribute(SDL_GLattr attr, int expected)
 	return val == expected;
 }
 
-bool window_sdl_window_set_gl_attributes(void)
+void window_sdl_window_gl_attributes_set(void)
 {
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, WINDOW_GL_CONTEXT_MAJOR_VERSION);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, WINDOW_GL_CONTEXT_MINOR_VERSION);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, WINDOW_GL_CONTEXT_PROFILE_MASK);
 	// SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, WINDOW_GL_DOUBLEBUFFER);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, WINDOW_GL_CONTEXT_FLAGS);
-
-	// check if desired sdl window attributes were set
-	window_sdl_window_check_gl_attribute(SDL_GL_CONTEXT_MAJOR_VERSION, WINDOW_GL_CONTEXT_MAJOR_VERSION);
-	window_sdl_window_check_gl_attribute(SDL_GL_CONTEXT_MINOR_VERSION, WINDOW_GL_CONTEXT_MINOR_VERSION);
-	window_sdl_window_check_gl_attribute(SDL_GL_CONTEXT_PROFILE_MASK, WINDOW_GL_CONTEXT_PROFILE_MASK);
-	// window_sdl_window_check_gl_attribute(SDL_GL_DOUBLEBUFFER, WINDOW_GL_DOUBLEBUFFER);
-	window_sdl_window_check_gl_attribute(SDL_GL_CONTEXT_FLAGS, WINDOW_GL_CONTEXT_FLAGS);
-	return true;
 }
 
-bool window_sdl_window_create(window_t *win, const char *title, int w, int h)
+bool window_sdl_window_gl_attributes_check(void)
+{
+	return
+		window_sdl_window_check_gl_attribute(SDL_GL_CONTEXT_MAJOR_VERSION, WINDOW_GL_CONTEXT_MAJOR_VERSION) &&
+		window_sdl_window_check_gl_attribute(SDL_GL_CONTEXT_MINOR_VERSION, WINDOW_GL_CONTEXT_MINOR_VERSION) &&
+		window_sdl_window_check_gl_attribute(SDL_GL_CONTEXT_PROFILE_MASK, WINDOW_GL_CONTEXT_PROFILE_MASK) &&
+		// window_sdl_window_check_gl_attribute(SDL_GL_DOUBLEBUFFER, WINDOW_GL_DOUBLEBUFFER) &&
+		window_sdl_window_check_gl_attribute(SDL_GL_CONTEXT_FLAGS, WINDOW_GL_CONTEXT_FLAGS);
+}
+
+bool window_sdl_window_create(window_t *win, const char *title)
 {
 	win->sdl_window = SDL_CreateWindow(
 		title,
 		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-		w, h,
+		win->config.width, win->config.height,
 		SDL_WINDOW_OPENGL
 	);
 
@@ -82,16 +84,33 @@ bool window_sdl_init(void)
 	return sdl_initialized;
 }
 
-bool window_create(window_t *win, const char *title, int w, int h)
+void window_init(window_t *win)
 {
-	return win->is_running = (
+	*win = (window_t){
+		.sdl_window = NULL,
+		.gl_context = NULL,
+		.is_running = false,
+		.config = (config_t){
+			.width = 600,
+			.height = 400
+		},
+		.seq = NULL,
+		.port_id = -1
+	};
+}
+
+bool window_create(window_t *win, const char *title)
+{
+	window_init(win);
+	return win->is_running =
+		window_config_init(win) &&
+		window_midi_seq_create(win) &&
 		window_sdl_init() &&
-		window_sdl_window_set_gl_attributes() &&
-		window_sdl_window_create(win, title, w, h) &&
+		(window_sdl_window_gl_attributes_set(), window_sdl_window_gl_attributes_check()) &&
+		window_sdl_window_create(win, title) &&
 		window_gl_context_create(win) &&
 		window_gl_context_enable_vsync() &&
-		window_glew_init()
-	);
+		window_glew_init();
 }
 
 void window_destroy(window_t *win)
@@ -99,15 +118,55 @@ void window_destroy(window_t *win)
 	if (win->gl_context != NULL) { SDL_GL_DeleteContext(win->gl_context); }
 	if (win->sdl_window != NULL) { SDL_DestroyWindow(win->sdl_window); }
 	SDL_Quit();
+
+	window_midi_seq_destroy(win);
 }
 
 void window_handle_events(window_t *win)
 {
-	SDL_Event ev;
-	while (SDL_PollEvent(&ev)) {
-		switch (ev.type) {
+	SDL_Event event;
+	SDL_Scancode scancode;
+
+	int midi_note_number;
+	int channel = 0;
+	int velocity = 100;
+
+	while (SDL_PollEvent(&event)) {
+		switch (event.type) {
 		case SDL_QUIT:
 			win->is_running = false;
+			break;
+		case SDL_KEYDOWN:
+			scancode = event.key.keysym.scancode;
+			midi_note_number = win->config.keybinding[scancode];
+			if (midi_note_number != 0 && event.key.repeat == 0) {
+				midi_seq_event_send_note_on(
+					win->seq, 
+					win->port_id, 
+					channel, 
+					midi_note_number, 
+					velocity
+				);
+			}
+			if (scancode == win->config.sustain_key && event.key.repeat == 0) {
+				midi_seq_event_send_sustain_off(win->seq, win->port_id);
+			}
+			break;
+		case SDL_KEYUP:
+			scancode = event.key.keysym.scancode;
+			midi_note_number = win->config.keybinding[scancode];
+			if (midi_note_number != 0) {
+				midi_seq_event_send_note_off(
+					win->seq, 
+					win->port_id, 
+					channel, 
+					midi_note_number, 
+					velocity
+				);
+			}
+			if (scancode == win->config.sustain_key) {
+				midi_seq_event_send_sustain_on(win->seq, win->port_id);
+			}
 			break;
 		}
 	}
@@ -126,4 +185,40 @@ void window_run(window_t *win)
 		window_handle_events(win);
 		window_update(win);
 	}
+}
+
+bool window_config_init(window_t *win)
+{
+	return config_load(&win->config);
+}
+
+bool window_midi_seq_create(window_t *win)
+{
+	/* initialize alsa midi sequencer */
+	win->seq = midi_seq_client_open("jankokeys");
+	if (win->seq == NULL) {
+		fprintf(stderr, "ERROR: ALSA: couldn't open sequencer client\n");
+		return false;
+	}
+
+	win->port_id = midi_seq_port_create(win->seq, "midi_port");
+	if (win->port_id < 0) {
+		fprintf(stderr, "ERROR: ALSA: couldn't open sequencer port\n");
+		return false;
+	}
+
+	/* connect to the midi through port */
+	if (midi_seq_connect_to(win->seq, win->port_id, MIDI_THROUGH_CLIENT_ID, MIDI_THROUGH_PORT_ID) < 0) {
+		fprintf(stderr, "ERROR: ALSA: couldn't connect to midi through port %d:%d\n",
+			MIDI_THROUGH_CLIENT_ID, MIDI_THROUGH_PORT_ID);
+		return false;
+	}
+
+	return true;
+}
+
+void window_midi_seq_destroy(window_t *win)
+{
+	if (win->port_id >= 0) { midi_seq_port_destroy(win->seq, win->port_id); }
+	if (win->seq != NULL) { midi_seq_client_close(win->seq); }
 }
