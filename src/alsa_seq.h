@@ -2,6 +2,11 @@
 
 #include <alsa/asoundlib.h>
 
+#define MIDI_THROUGH_CLIENT_ID 14
+#define MIDI_THROUGH_PORT_ID 0
+
+#define MIDI_NOTE_MIDDLE_C 60
+
 #define midi_seq_connect_to snd_seq_connect_to
 
 typedef snd_seq_t midi_seq_t;
