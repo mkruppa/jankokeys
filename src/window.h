@@ -31,6 +31,8 @@ void window_sdl_window_gl_attributes_set(void);
 
 bool window_sdl_window_gl_attributes_check(void);
 
+void window_gl_debug_callback_set(void);
+
 bool window_sdl_window_create(window_t *win, const char *title);
 
 bool window_sdl_init(void);

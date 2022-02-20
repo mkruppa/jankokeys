@@ -2,6 +2,8 @@
 
 #include <GL/glew.h>
 
+#include "midi_keyboard_janko.h"
+
 #define WINDOW_GL_CONTEXT_MAJOR_VERSION 4
 #define WINDOW_GL_CONTEXT_MINOR_VERSION 3
 #define WINDOW_GL_CONTEXT_PROFILE_MASK SDL_GL_CONTEXT_PROFILE_CORE
@@ -61,6 +63,37 @@ bool window_sdl_window_gl_attributes_check(void)
 		window_sdl_window_check_gl_attribute(SDL_GL_CONTEXT_PROFILE_MASK, WINDOW_GL_CONTEXT_PROFILE_MASK) &&
 		// window_sdl_window_check_gl_attribute(SDL_GL_DOUBLEBUFFER, WINDOW_GL_DOUBLEBUFFER) &&
 		window_sdl_window_check_gl_attribute(SDL_GL_CONTEXT_FLAGS, WINDOW_GL_CONTEXT_FLAGS);
+}
+
+void GLAPIENTRY window_gl_debug_callback(
+	GLenum source,
+	GLenum type,
+	GLuint id,
+	GLenum severity,
+	GLsizei length,
+	const GLchar *message,
+	const void *userParam)
+{
+	(void)source;
+	(void)type;
+	(void)id;
+	(void)length;
+	(void)userParam;
+
+	fprintf(stderr, "ERROR: OPENGL: %s\n", message);
+	if (severity == GL_DEBUG_SEVERITY_HIGH) { abort(); }
+}
+
+void window_gl_debug_callback_set(void)
+{
+	int context_flags;
+	glGetIntegerv(GL_CONTEXT_FLAGS, &context_flags);
+	if (context_flags & GL_CONTEXT_FLAG_DEBUG_BIT) {
+		glEnable(GL_DEBUG_OUTPUT);
+		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+		glDebugMessageCallback(&window_gl_debug_callback, NULL);
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
+	}
 }
 
 bool window_sdl_window_create(window_t *win, const char *title)
@@ -176,11 +209,17 @@ void window_update(window_t *win)
 {
 	glClearColor(0.0F, 0.0F, 0.0F, 1.0F);
 	glClear(GL_COLOR_BUFFER_BIT);
+
+	midi_keyboard_janko_render();
+
 	SDL_GL_SwapWindow(win->sdl_window);
 }
 
 void window_run(window_t *win)
 {
+	window_gl_debug_callback_set();
+	midi_keyboard_janko_init();
+
 	while (win->is_running) {
 		window_handle_events(win);
 		window_update(win);
