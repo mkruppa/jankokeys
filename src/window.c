@@ -3,6 +3,7 @@
 #include <GL/glew.h>
 
 #include "midi_keyboard_janko.h"
+#include "shader.h"
 
 #define WINDOW_GL_CONTEXT_MAJOR_VERSION 4
 #define WINDOW_GL_CONTEXT_MINOR_VERSION 3
@@ -210,7 +211,8 @@ void window_update(window_t *win)
 	glClearColor(0.0F, 0.0F, 0.0F, 1.0F);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	midi_keyboard_janko_render();
+	glUseProgram(win->shader);
+	midi_keyboard_janko_render(&win->janko_keyboard);
 
 	SDL_GL_SwapWindow(win->sdl_window);
 }
@@ -218,7 +220,8 @@ void window_update(window_t *win)
 void window_run(window_t *win)
 {
 	window_gl_debug_callback_set();
-	midi_keyboard_janko_init();
+	win->shader = load_shaders_from_file("../shader/simple.vert", "../shader/simple.frag");
+	midi_keyboard_janko_init(&win->janko_keyboard, win->shader);
 
 	while (win->is_running) {
 		window_handle_events(win);

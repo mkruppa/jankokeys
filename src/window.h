@@ -5,16 +5,24 @@
 
 #include "config.h"
 #include "alsa_seq.h"
+#include "midi_keyboard_janko.h"
 
-typedef struct {
+typedef struct window {
+	/* sdl opengl */
 	SDL_Window *sdl_window;
 	SDL_GLContext gl_context;
 	bool is_running;
 
+	/* lua */
 	config_t config;
 
+	/* alsa */
 	midi_seq_t *seq;
 	int port_id;
+
+	/* opengl */
+	GLuint shader;
+	midi_keyboard_janko_t janko_keyboard;
 } window_t;
 
 void window_sdl_print_error(void);

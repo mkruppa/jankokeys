@@ -1,29 +1,20 @@
 #include "midi_keyboard_janko.h"
 
-#include <GL/glew.h>
-
 #include "shader.h"
 
-static GLuint shader;
-
-static GLuint vao;
-static GLuint vbo;
 static GLfloat data[] = {
 	-1.0F, -1.0F,  0.0F,
 	 1.0F, -1.0F,  0.0F,
 	 0.0F,  1.0F,  0.0F
 };
 
-void midi_keyboard_janko_init(void)
+void midi_keyboard_janko_init(midi_keyboard_janko_t *kb, GLuint shader)
 {
-	shader = load_shaders_from_file("../shader/simple.vert", "../shader/simple.frag");
-	glUseProgram(shader);
+	glGenVertexArrays(1, &kb->vao);
+	glBindVertexArray(kb->vao);
 
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-
-	glGenBuffers(1, &vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glGenBuffers(1, &kb->vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, kb->vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(data), data, GL_STATIC_DRAW);
 
 	GLint pos = glGetAttribLocation(shader, "vert_pos");
@@ -34,9 +25,9 @@ void midi_keyboard_janko_init(void)
 	glBindVertexArray(0);
 }
 
-void midi_keyboard_janko_render(void)
+void midi_keyboard_janko_render(midi_keyboard_janko_t *kb)
 {
-	glBindVertexArray(vao);
+	glBindVertexArray(kb->vao);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 	glBindVertexArray(0);
 }
