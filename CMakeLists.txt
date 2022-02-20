@@ -16,7 +16,9 @@ add_executable(${PROJECT_NAME}
 	src/main.c
 	src/alsa_seq.c
 	src/config.c
-	src/window.c)
+	src/window.c
+	src/shader.c
+	src/midi_keyboard_janko.c)
 
 target_link_libraries(${PROJECT_NAME}
 	ALSA::ALSA

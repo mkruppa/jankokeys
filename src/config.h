@@ -6,7 +6,7 @@
 
 #define NUM_MIDI_NOTES 128
 
-typedef struct {
+typedef struct config {
 	int width;
 	int height;
 	SDL_Scancode sustain_key;
