@@ -39,7 +39,7 @@ void window_sdl_window_gl_attributes_set(void);
 
 bool window_sdl_window_gl_attributes_check(void);
 
-void window_gl_debug_callback_set(void);
+void window_gl_debug_callback_enable(void);
 
 bool window_sdl_window_create(window_t *win, const char *title);
 
@@ -56,6 +56,8 @@ void window_handle_events(window_t *win);
 void window_update(window_t *win);
 
 void window_run(window_t *win);
+
+void window_gl_origin_set_bottom_left(window_t *win);
 
 bool window_config_init(window_t *win);
 
