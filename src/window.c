@@ -1,6 +1,10 @@
 #include "window.h"
 
 #include <GL/glew.h>
+#include <cglm/cam.h>
+
+#define CGLM_DEFINE_PRINTS
+#include <cglm/cglm.h>
 
 #include "midi_keyboard_janko.h"
 #include "shader.h"
@@ -85,7 +89,7 @@ void GLAPIENTRY window_gl_debug_callback(
 	if (severity == GL_DEBUG_SEVERITY_HIGH) { abort(); }
 }
 
-void window_gl_debug_callback_set(void)
+void window_gl_debug_callback_enable(void)
 {
 	int context_flags;
 	glGetIntegerv(GL_CONTEXT_FLAGS, &context_flags);
@@ -144,7 +148,8 @@ bool window_create(window_t *win, const char *title)
 		window_sdl_window_create(win, title) &&
 		window_gl_context_create(win) &&
 		window_gl_context_enable_vsync() &&
-		window_glew_init();
+		window_glew_init() &&
+		(window_gl_debug_callback_enable(), true);
 }
 
 void window_destroy(window_t *win)
@@ -181,6 +186,8 @@ void window_handle_events(window_t *win)
 					midi_note_number, 
 					velocity
 				);
+
+				midi_keyboard_janko_receive_midi_note_on(&win->janko_keyboard, midi_note_number);
 			}
 			if (scancode == win->config.sustain_key && event.key.repeat == 0) {
 				midi_seq_event_send_sustain_off(win->seq, win->port_id);
@@ -197,6 +204,8 @@ void window_handle_events(window_t *win)
 					midi_note_number, 
 					velocity
 				);
+				
+				midi_keyboard_janko_receive_midi_note_off(&win->janko_keyboard, midi_note_number);
 			}
 			if (scancode == win->config.sustain_key) {
 				midi_seq_event_send_sustain_on(win->seq, win->port_id);
@@ -212,21 +221,33 @@ void window_update(window_t *win)
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glUseProgram(win->shader);
-	midi_keyboard_janko_render(&win->janko_keyboard);
+	midi_keyboard_janko_render(&win->janko_keyboard, &win->MVP);
 
 	SDL_GL_SwapWindow(win->sdl_window);
 }
 
 void window_run(window_t *win)
 {
-	window_gl_debug_callback_set();
-	win->shader = load_shaders_from_file("../shader/simple.vert", "../shader/simple.frag");
+	win->shader = shader_program_create_from_file("../shader/simple.vert", "../shader/simple.frag");
+	window_gl_origin_set_bottom_left(win);
 	midi_keyboard_janko_init(&win->janko_keyboard, win->shader);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	while (win->is_running) {
-		window_handle_events(win);
 		window_update(win);
+		window_handle_events(win);
 	}
+
+	midi_keyboard_janko_uninit(&win->janko_keyboard);
+	shader_program_destroy(win->shader);
+}
+
+void window_gl_origin_set_bottom_left(window_t *win)
+{
+	glm_ortho(0.0F, 1.0F, 0.0F, 1.0F, 0.0F, 100.0F, win->MVP);
+	glUseProgram(win->shader);
+	GLint loc = glGetUniformLocation(win->shader, "M");
+	glUniformMatrix4fv(loc, 1, GL_FALSE, (GLfloat*)win->MVP);
 }
 
 bool window_config_init(window_t *win)
