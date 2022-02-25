@@ -3,6 +3,9 @@
 #include <stdbool.h>
 #include <SDL.h>
 
+#define CGLM_DEFINE_PRINTS
+#include <cglm/cglm.h>
+
 #include "config.h"
 #include "alsa_seq.h"
 #include "midi_keyboard_janko.h"
@@ -21,6 +24,7 @@ typedef struct window {
 	int port_id;
 
 	/* opengl */
+	mat4 MVP;
 	GLuint shader;
 	midi_keyboard_janko_t janko_keyboard;
 } window_t;

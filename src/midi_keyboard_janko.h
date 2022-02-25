@@ -2,6 +2,9 @@
 
 #include <GL/glew.h>
 
+#define CGLM_DEFINE_PRINTS
+#include <cglm/cglm.h>
+
 #define NUM_VERTICES_PER_KEY 4
 #define NUM_DIMENSIONS_PER_VERTEX 3
 #define NUM_COLOR_CHANNELS_PER_VERTEX 3
@@ -12,6 +15,7 @@
 typedef GLfloat midi_keyboard_key_color_t[NUM_ELEMENTS_PER_COLOR];
 extern const midi_keyboard_key_color_t MIDI_KEYBOARD_COLOR_WHITE;
 extern const midi_keyboard_key_color_t MIDI_KEYBOARD_COLOR_RED;
+extern const midi_keyboard_key_color_t MIDI_KEYBOARD_COLOR_BLUE;
 
 typedef struct midi_keyboard_janko {
 	/* opengl data */
@@ -24,6 +28,8 @@ typedef struct midi_keyboard_janko {
 	GLuint vbo_vertices;
 	GLuint ebo_vertices;
 	GLuint vbo_colors;
+
+	GLuint shader_program;
 
 	GLuint num_keys;
 	GLfloat width;
@@ -48,4 +54,7 @@ void midi_keyboard_janko_key_set_unpressed(midi_keyboard_janko_t *kb, GLuint key
 void midi_keyboard_janko_receive_midi_note_on(midi_keyboard_janko_t *kb, int midi_note_number);
 void midi_keyboard_janko_receive_midi_note_off(midi_keyboard_janko_t *kb, int midi_note_number);
 
-void midi_keyboard_janko_render(midi_keyboard_janko_t *kb);
+GLfloat midi_keyboard_janko_key_width(midi_keyboard_janko_t *kb);
+GLuint midi_keyboard_janko_num_keys_row_bottom(midi_keyboard_janko_t *kb);
+
+void midi_keyboard_janko_render(midi_keyboard_janko_t *kb, mat4 *MVP);

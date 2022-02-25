@@ -221,7 +221,7 @@ void window_update(window_t *win)
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glUseProgram(win->shader);
-	midi_keyboard_janko_render(&win->janko_keyboard);
+	midi_keyboard_janko_render(&win->janko_keyboard, &win->MVP);
 
 	SDL_GL_SwapWindow(win->sdl_window);
 }
@@ -244,11 +244,10 @@ void window_run(window_t *win)
 
 void window_gl_origin_set_bottom_left(window_t *win)
 {
-	mat4 proj;
-	glm_ortho(0.0F, 1.0F, 0.0F, 1.0F, 0.0F, 100.0F, proj);
+	glm_ortho(0.0F, 1.0F, 0.0F, 1.0F, 0.0F, 100.0F, win->MVP);
 	glUseProgram(win->shader);
 	GLint loc = glGetUniformLocation(win->shader, "M");
-	glUniformMatrix4fv(loc, 1, GL_FALSE, (GLfloat*)proj);
+	glUniformMatrix4fv(loc, 1, GL_FALSE, (GLfloat*)win->MVP);
 }
 
 bool window_config_init(window_t *win)
