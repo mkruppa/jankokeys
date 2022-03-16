@@ -1,13 +1,13 @@
 #include "window.h"
 
 #include <GL/glew.h>
-#include <cglm/cam.h>
 
 #define CGLM_DEFINE_PRINTS
 #include <cglm/cglm.h>
 
 #include "midi_keyboard_janko.h"
 #include "shader.h"
+#include "midi_process_events.h"
 
 #define WINDOW_GL_CONTEXT_MAJOR_VERSION 4
 #define WINDOW_GL_CONTEXT_MINOR_VERSION 3
@@ -107,8 +107,9 @@ bool window_sdl_window_create(window_t *win, const char *title)
 		title,
 		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 		win->config.width, win->config.height,
-		SDL_WINDOW_OPENGL
+		SDL_WINDOW_OPENGL | SDL_WINDOW_BORDERLESS
 	);
+	SDL_SetWindowOpacity(win->sdl_window, 0.5F);
 
 	bool sdl_window_created = win->sdl_window != NULL;
 	if (!sdl_window_created) { window_sdl_print_error(); }
@@ -169,42 +170,35 @@ void window_handle_events(window_t *win)
 	int midi_note_number;
 	int channel = 0;
 	int velocity = 100;
+	static int octave = 0;
 
 	while (SDL_PollEvent(&event)) {
+		if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
+			scancode = event.key.keysym.scancode;
+			midi_note_number = win->config.keybinding[scancode];
+			if (midi_note_number != 0) { midi_note_number += octave * 12; }
+		}
 		switch (event.type) {
 		case SDL_QUIT:
 			win->is_running = false;
 			break;
 		case SDL_KEYDOWN:
-			scancode = event.key.keysym.scancode;
-			midi_note_number = win->config.keybinding[scancode];
-			if (midi_note_number != 0 && event.key.repeat == 0) {
-				midi_seq_event_send_note_on(
-					win->seq, 
-					win->port_id, 
-					channel, 
-					midi_note_number, 
-					velocity
-				);
+			if (event.key.repeat != 0) { continue; }
 
+			if (scancode == SDL_SCANCODE_LEFT) { --octave; break; }
+			if (scancode == SDL_SCANCODE_RIGHT) { ++octave; break; }
+
+			if (midi_note_number != 0) {
+				midi_seq_event_send_note_on(win->seq, win->port_id, channel, midi_note_number, velocity);
 				midi_keyboard_janko_receive_midi_note_on(&win->janko_keyboard, midi_note_number);
 			}
-			if (scancode == win->config.sustain_key && event.key.repeat == 0) {
+			if (scancode == win->config.sustain_key) {
 				midi_seq_event_send_sustain_off(win->seq, win->port_id);
 			}
 			break;
 		case SDL_KEYUP:
-			scancode = event.key.keysym.scancode;
-			midi_note_number = win->config.keybinding[scancode];
 			if (midi_note_number != 0) {
-				midi_seq_event_send_note_off(
-					win->seq, 
-					win->port_id, 
-					channel, 
-					midi_note_number, 
-					velocity
-				);
-				
+				midi_seq_event_send_note_off(win->seq, win->port_id, channel, midi_note_number, velocity);
 				midi_keyboard_janko_receive_midi_note_off(&win->janko_keyboard, midi_note_number);
 			}
 			if (scancode == win->config.sustain_key) {
@@ -221,6 +215,7 @@ void window_update(window_t *win)
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glUseProgram(win->shader);
+	midi_keyboard_janko_keys_update(&win->janko_keyboard);
 	midi_keyboard_janko_render(&win->janko_keyboard, &win->MVP);
 
 	SDL_GL_SwapWindow(win->sdl_window);
@@ -230,12 +225,12 @@ void window_run(window_t *win)
 {
 	win->shader = shader_program_create_from_file("../shader/simple.vert", "../shader/simple.frag");
 	window_gl_origin_set_bottom_left(win);
-	midi_keyboard_janko_init(&win->janko_keyboard, win->shader);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	midi_keyboard_janko_init(&win->janko_keyboard, win->shader, win->config.width, win->config.height);
 
 	while (win->is_running) {
 		window_update(win);
 		window_handle_events(win);
+		midi_process_events(win->seq, &win->janko_keyboard);
 	}
 
 	midi_keyboard_janko_uninit(&win->janko_keyboard);
@@ -244,7 +239,7 @@ void window_run(window_t *win)
 
 void window_gl_origin_set_bottom_left(window_t *win)
 {
-	glm_ortho(0.0F, 1.0F, 0.0F, 1.0F, 0.0F, 100.0F, win->MVP);
+	glm_ortho(0.0F, win->config.width, 0.0F, win->config.height, 0.0F, 100.0F, win->MVP);
 	glUseProgram(win->shader);
 	GLint loc = glGetUniformLocation(win->shader, "M");
 	glUniformMatrix4fv(loc, 1, GL_FALSE, (GLfloat*)win->MVP);
@@ -271,8 +266,14 @@ bool window_midi_seq_create(window_t *win)
 	}
 
 	/* connect to the midi through port */
-	if (midi_seq_connect_to(win->seq, win->port_id, MIDI_THROUGH_CLIENT_ID, MIDI_THROUGH_PORT_ID) < 0) {
-		fprintf(stderr, "ERROR: ALSA: couldn't connect to midi through port %d:%d\n",
+	// if (midi_seq_connect_to(win->seq, win->port_id, MIDI_THROUGH_CLIENT_ID, MIDI_THROUGH_PORT_ID) < 0) {
+	// 	fprintf(stderr, "ERROR: ALSA: couldn't connect to midi through port %d:%d\n",
+	// 		MIDI_THROUGH_CLIENT_ID, MIDI_THROUGH_PORT_ID);
+	// 	return false;
+	// }
+
+	if (snd_seq_connect_from(win->seq, win->port_id, MIDI_THROUGH_CLIENT_ID, MIDI_THROUGH_PORT_ID) < 0) {
+		fprintf(stderr, "ERROR: ALSA: couldn't connect from midi through port %d:%d\n",
 			MIDI_THROUGH_CLIENT_ID, MIDI_THROUGH_PORT_ID);
 		return false;
 	}
