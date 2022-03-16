@@ -13,7 +13,7 @@
 midi_seq_t *midi_seq_client_open(const char *client_name)
 {
 	snd_seq_t *seq = NULL;
-	snd_seq_open(&seq, "default", SND_SEQ_OPEN_DUPLEX, 0);
+	snd_seq_open(&seq, "default", SND_SEQ_OPEN_DUPLEX, SND_SEQ_NONBLOCK);
 	snd_seq_set_client_name(seq, client_name);
 	return seq;
 }
