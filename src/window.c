@@ -211,7 +211,9 @@ void window_handle_events(window_t *win)
 
 void window_update(window_t *win)
 {
-	glClearColor(0.0F, 0.0F, 0.0F, 1.0F);
+	double PI = acos(-1);
+	double elapsed_seconds = sdl_clock_elapsed_ms(&win->clock) / 1000.0;
+	glClearColor(0.0F, 0.0F, sin(elapsed_seconds * 2 * PI), 1.0F);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glUseProgram(win->shader);
@@ -227,6 +229,7 @@ void window_run(window_t *win)
 	window_gl_origin_set_bottom_left(win);
 	midi_keyboard_janko_init(&win->janko_keyboard, win->shader, win->config.width, win->config.height);
 
+	sdl_clock_start(&win->clock);
 	while (win->is_running) {
 		window_update(win);
 		window_handle_events(win);

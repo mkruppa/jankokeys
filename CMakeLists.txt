@@ -24,7 +24,8 @@ add_executable(${PROJECT_NAME}
 	src/shader.c
 	src/midi_keyboard_janko.c
 	src/midi_process_events.c
-	src/texture_atlas.c)
+	src/texture_atlas.c
+	src/sdl_clock.c)
 
 target_link_libraries(${PROJECT_NAME}
 	ALSA::ALSA
