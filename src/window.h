@@ -9,12 +9,14 @@
 #include "config.h"
 #include "alsa_seq.h"
 #include "midi_keyboard_janko.h"
+#include "sdl_clock.h"
 
 typedef struct window {
 	/* sdl opengl */
 	SDL_Window *sdl_window;
 	SDL_GLContext gl_context;
 	bool is_running;
+	sdl_clock_t clock;
 
 	/* lua */
 	config_t config;

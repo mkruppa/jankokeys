@@ -33,7 +33,7 @@ void midi_process_events(midi_seq_t *seq, midi_keyboard_janko_t *kb)
 				ev->data.control.channel, ev->data.control.param, ev->data.control.value);
 			if (ev->data.control.param == CHANNEL_MODE_MESSAGE_ALL_NOTES_OFF) {
 				for (size_t key_id = 0; key_id < NUM_MIDI_KEYBOARD_KEYS; ++key_id) {
-					kb->keys_pressed[key_id] = 0;
+					kb->pressed_keys[key_id] = 0;
 				}
 			}
 			break;
