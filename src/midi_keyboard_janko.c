@@ -56,7 +56,7 @@ void midi_keyboard_janko_init(midi_keyboard_janko_t *kb, GLuint shader, int widt
 	assert(kb->num_rows >= MIDI_KEYBOARD_JANKO_MIN_NUM_ROWS);
 	assert(kb->num_rows <= MIDI_KEYBOARD_JANKO_MAX_NUM_ROWS);
 
-	midi_keyboard_key_color_rgb(0.1F, 0.3F, 0.7F, key_color_pressed);
+	midi_keyboard_key_color_rgb(0.2F, 0.3F, 0.8F, key_color_pressed);
 	midi_keyboard_key_color_rgb(1.0F, 1.0F, 1.0F, key_color_unpressed);
 
 	is_bottom_row_indented = is_lowest_midi_note_in_f_row(kb);
