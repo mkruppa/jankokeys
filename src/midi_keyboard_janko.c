@@ -24,6 +24,11 @@ static int key_types_c_row[NUM_KEYS_PER_OCTAVE_PER_ROW] = { 0, 0, 0, 1, 1, 1 };
 static int *key_types_top_row = key_types_f_row;
 static int *key_types_bottom_row = key_types_c_row;
 
+#define MIDI_KEYBOARD_KEY_PRESSED -1
+#define MIDI_KEYBOARD_KEY_RELEASED_MS 300
+static midi_keyboard_key_color_t key_color_pressed;
+static midi_keyboard_key_color_t key_color_unpressed;
+
 static bool is_bottom_row_indented;
 
 static int midi_distance_from_c(int midi_note_number)
@@ -44,6 +49,9 @@ void midi_keyboard_janko_init(midi_keyboard_janko_t *kb, GLuint shader, int widt
 		.midi_note_number_lowest = MIDI_NOTE_A0,
 		.shader_program = shader,
 	};
+
+	midi_keyboard_key_color_rgb(0.1F, 0.3F, 0.7F, key_color_pressed);
+	midi_keyboard_key_color_rgb(1.0F, 1.0F, 1.0F, key_color_unpressed);
 
 	is_bottom_row_indented = is_lowest_midi_note_in_f_row(kb);
 
@@ -147,7 +155,7 @@ void midi_keyboard_janko_gl_data_create(midi_keyboard_janko_t *kb)
 		/* append the data */
 		memcpy(&kb->vertices[i * NUM_ELEMENTS_PER_VERTEX], vertex, SIZE_VERTEX);
 		memcpy(&kb->indices[i * NUM_ELEMENTS_PER_INDEX], index, SIZE_INDEX);
-		memcpy(&kb->colors[i * NUM_ELEMENTS_PER_COLOR], MIDI_KEYBOARD_KEY_COLOR_WHITE, SIZE_COLOR);
+		memcpy(&kb->colors[i * NUM_ELEMENTS_PER_COLOR], key_color_unpressed, SIZE_COLOR);
 		memcpy(&kb->texture_uvs[i * NUM_ELEMENTS_PER_TEXTURE_UV], uv_key, SIZE_TEXTURE_UV);
 	}
 }
@@ -226,25 +234,20 @@ bool midi_keyboard_janko_is_top_row_key(GLuint midi_key_id)
 	return !is_bottom_row_indented ? is_midi_key_id_odd : !is_midi_key_id_odd;
 }
 
-#define MIDI_KEYBOARD_KEY_PRESSED -1
-#define MIDI_KEYBOARD_KEY_RELEASED_MS 300
-#define MIDI_KEYBOARD_KEY_COLOR_PRESSED MIDI_KEYBOARD_KEY_COLOR_DARK_BLUE
-#define MIDI_KEYBOARD_KEY_COLOR_UNPRESSED MIDI_KEYBOARD_KEY_COLOR_WHITE
-
 void midi_keyboard_janko_update_key_color(midi_keyboard_janko_t *kb, size_t midi_key_id, double delta_time_ms, midi_keyboard_key_color_t color)
 {
 	if (midi_keyboard_janko_is_key_pressed(kb, midi_key_id)) {
-		memcpy(color, MIDI_KEYBOARD_KEY_COLOR_PRESSED, SIZE_COLOR);
+		memcpy(color, key_color_pressed, SIZE_COLOR);
 	} else if (kb->pressed_keys[midi_key_id] > 0) {
 		kb->pressed_keys[midi_key_id] = fmax(0, kb->pressed_keys[midi_key_id] - delta_time_ms);
 		midi_keyboard_key_color_ease(
 			MIDI_KEYBOARD_KEY_RELEASED_MS - kb->pressed_keys[midi_key_id],
 			MIDI_KEYBOARD_KEY_RELEASED_MS,
-			MIDI_KEYBOARD_KEY_COLOR_PRESSED,
-			MIDI_KEYBOARD_KEY_COLOR_UNPRESSED, 
+			key_color_pressed,
+			key_color_unpressed, 
 			color);
 	} else {
-		memcpy(color, MIDI_KEYBOARD_KEY_COLOR_UNPRESSED, SIZE_COLOR);
+		memcpy(color, key_color_unpressed, SIZE_COLOR);
 	}
 }
 
