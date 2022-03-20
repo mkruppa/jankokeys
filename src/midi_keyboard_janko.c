@@ -1,4 +1,5 @@
 #include "midi_keyboard_janko.h"
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,6 +13,8 @@
 #define SIZE_TEXTURE_UV (NUM_ELEMENTS_PER_TEXTURE_UV * sizeof(GLfloat))
 
 #define JANKO_KEY_HEIGHT_OVER_WIDTH_RATIO (3.0F / 2.0F)
+#define MIDI_KEYBOARD_JANKO_MIN_NUM_ROWS 2
+#define MIDI_KEYBOARD_JANKO_MAX_NUM_ROWS 6
 
 static uv_quad_t uv_key_black;
 static uv_quad_t uv_key_white;
@@ -48,9 +51,12 @@ void midi_keyboard_janko_init(midi_keyboard_janko_t *kb, GLuint shader, int widt
 		.height = height,
 		.midi_note_number_lowest = MIDI_NOTE_A0,
 		.shader_program = shader,
+		.num_rows = 3,
 	};
+	assert(kb->num_rows >= MIDI_KEYBOARD_JANKO_MIN_NUM_ROWS);
+	assert(kb->num_rows <= MIDI_KEYBOARD_JANKO_MAX_NUM_ROWS);
 
-	midi_keyboard_key_color_rgb(0.1F, 0.3F, 0.7F, key_color_pressed);
+	midi_keyboard_key_color_rgb(0.2F, 0.3F, 0.8F, key_color_pressed);
 	midi_keyboard_key_color_rgb(1.0F, 1.0F, 1.0F, key_color_unpressed);
 
 	is_bottom_row_indented = is_lowest_midi_note_in_f_row(kb);
@@ -314,22 +320,21 @@ void midi_keyboard_janko_render(midi_keyboard_janko_t *kb, mat4 *MVP)
 	glUniformMatrix4fv(loc, 1, GL_FALSE, (GLfloat*)mat);
 	glDrawElements(GL_TRIANGLES, NUM_MIDI_KEYBOARD_KEYS * NUM_ELEMENTS_PER_INDEX, GL_UNSIGNED_INT, 0);
 
-	// const GLfloat key_height = midi_keyboard_janko_key_width(kb) * JANKO_KEY_HEIGHT_OVER_WIDTH_RATIO;
+	/* draw remaining rows */
+	uint num_remaining_rows = kb->num_rows - MIDI_KEYBOARD_JANKO_MIN_NUM_ROWS;
+	while(num_remaining_rows > 0) {
+		const GLfloat key_height = midi_keyboard_janko_key_width(kb) * JANKO_KEY_HEIGHT_OVER_WIDTH_RATIO;
+		glm_translate(mat, (vec4){0.0F, MIDI_KEYBOARD_JANKO_MIN_NUM_ROWS * key_height, 0.0F, 0.0F});
+		glUniformMatrix4fv(loc, 1, GL_FALSE, (GLfloat*)mat);
 
-	// /* draw row 3 */
-	// glm_translate(mat, (vec4){0.0F, 2 * key_height, 0.0F, 0.0F});
-	// glUniformMatrix4fv(loc, 1, GL_FALSE, (GLfloat*)mat);
-	// glDrawElements(GL_TRIANGLES, midi_keyboard_janko_num_keys_row_bottom() * NUM_ELEMENTS_PER_INDEX, GL_UNSIGNED_INT, 0);
-
-	// /* draw rows 3 and 4 */
-	// glm_translate(mat, (vec4){0.0F, 2 * key_height, 0.0F, 0.0F});
-	// glUniformMatrix4fv(loc, 1, GL_FALSE, (GLfloat*)mat);
-	// glDrawElements(GL_TRIANGLES, NUM_MIDI_KEYBOARD_KEYS * NUM_ELEMENTS_PER_INDEX, GL_UNSIGNED_INT, 0);
-
-	// /* draw rows 5 and 6 */
-	// glm_translate(mat, (vec4){0.0F, 2 * key_height, 0.0F, 0.0F});
-	// glUniformMatrix4fv(loc, 1, GL_FALSE, (GLfloat*)mat);
-	// glDrawElements(GL_TRIANGLES, NUM_MIDI_KEYBOARD_KEYS * NUM_ELEMENTS_PER_INDEX, GL_UNSIGNED_INT, 0);
+		if (num_remaining_rows == 1) {
+			glDrawElements(GL_TRIANGLES, midi_keyboard_janko_num_keys_row_bottom() * NUM_ELEMENTS_PER_INDEX, GL_UNSIGNED_INT, 0);
+			num_remaining_rows -= 1;
+		} else {
+			glDrawElements(GL_TRIANGLES, NUM_MIDI_KEYBOARD_KEYS * NUM_ELEMENTS_PER_INDEX, GL_UNSIGNED_INT, 0);
+			num_remaining_rows -= 2;
+		}
+	}
 
 	glBindVertexArray(0);
 }

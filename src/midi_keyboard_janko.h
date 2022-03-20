@@ -37,6 +37,7 @@ typedef struct midi_keyboard_janko {
 
 	GLfloat width;
 	GLfloat height; // TODO unused
+	uint num_rows;
 	int midi_note_number_lowest;
 	int *pressed_keys;
 } midi_keyboard_janko_t;
