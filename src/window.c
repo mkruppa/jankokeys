@@ -211,13 +211,13 @@ void window_handle_events(window_t *win)
 
 void window_update(window_t *win)
 {
-	double PI = acos(-1);
-	double elapsed_seconds = sdl_clock_elapsed_ms(&win->clock) / 1000.0;
-	glClearColor(0.0F, 0.0F, sin(elapsed_seconds * 2 * PI), 1.0F);
+	double delta_time_ms = sdl_clock_restart(&win->clock);
+
+	glClearColor(0.0F, 0.0F, 0.0F, 1.0F);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glUseProgram(win->shader);
-	midi_keyboard_janko_keys_update(&win->janko_keyboard);
+	midi_keyboard_janko_update_keys(&win->janko_keyboard, delta_time_ms);
 	midi_keyboard_janko_render(&win->janko_keyboard, &win->MVP);
 
 	SDL_GL_SwapWindow(win->sdl_window);
@@ -269,11 +269,11 @@ bool window_midi_seq_create(window_t *win)
 	}
 
 	/* connect to the midi through port */
-	// if (midi_seq_connect_to(win->seq, win->port_id, MIDI_THROUGH_CLIENT_ID, MIDI_THROUGH_PORT_ID) < 0) {
-	// 	fprintf(stderr, "ERROR: ALSA: couldn't connect to midi through port %d:%d\n",
-	// 		MIDI_THROUGH_CLIENT_ID, MIDI_THROUGH_PORT_ID);
-	// 	return false;
-	// }
+	if (midi_seq_connect_to(win->seq, win->port_id, MIDI_THROUGH_CLIENT_ID, MIDI_THROUGH_PORT_ID) < 0) {
+		fprintf(stderr, "ERROR: ALSA: couldn't connect to midi through port %d:%d\n",
+			MIDI_THROUGH_CLIENT_ID, MIDI_THROUGH_PORT_ID);
+		return false;
+	}
 
 	if (snd_seq_connect_from(win->seq, win->port_id, MIDI_THROUGH_CLIENT_ID, MIDI_THROUGH_PORT_ID) < 0) {
 		fprintf(stderr, "ERROR: ALSA: couldn't connect from midi through port %d:%d\n",

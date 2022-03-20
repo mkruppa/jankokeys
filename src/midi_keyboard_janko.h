@@ -5,6 +5,7 @@
 #define CGLM_DEFINE_PRINTS
 #include <cglm/cglm.h>
 
+#include "midi_keyboard_key_color.h"
 #include "texture_atlas.h"
 
 #define NUM_VERTICES_PER_KEY 4
@@ -12,16 +13,10 @@
 #define NUM_COLOR_CHANNELS_PER_VERTEX 3
 #define NUM_DIMENSIONS_PER_UV 2
 #define NUM_ELEMENTS_PER_VERTEX (NUM_VERTICES_PER_KEY * NUM_DIMENSIONS_PER_VERTEX)
-#define NUM_ELEMENTS_PER_COLOR (NUM_VERTICES_PER_KEY * NUM_COLOR_CHANNELS_PER_VERTEX)
 #define NUM_ELEMENTS_PER_INDEX 6
 #define NUM_ELEMENTS_PER_TEXTURE_UV (NUM_VERTICES_PER_KEY * NUM_DIMENSIONS_PER_UV)
 
 #define NUM_MIDI_KEYBOARD_KEYS 88
-
-typedef GLfloat midi_keyboard_key_color_t[NUM_ELEMENTS_PER_COLOR];
-extern const midi_keyboard_key_color_t MIDI_KEYBOARD_KEY_COLOR_WHITE;
-extern const midi_keyboard_key_color_t MIDI_KEYBOARD_KEY_COLOR_RED;
-extern const midi_keyboard_key_color_t MIDI_KEYBOARD_KEY_COLOR_BLUE;
 
 typedef struct midi_keyboard_janko {
 	/* opengl data */
@@ -43,7 +38,7 @@ typedef struct midi_keyboard_janko {
 	GLfloat width;
 	GLfloat height; // TODO unused
 	int midi_note_number_lowest;
-	int *keys_pressed;
+	int *pressed_keys;
 } midi_keyboard_janko_t;
 
 void midi_keyboard_janko_init(midi_keyboard_janko_t *kb, GLuint shader, int width, int height);
@@ -57,9 +52,12 @@ void midi_keyboard_janko_gl_init(midi_keyboard_janko_t *kb, GLuint shader);
 void midi_keyboard_janko_gl_uninit(midi_keyboard_janko_t *kb);
 
 GLuint midi_keyboard_janko_midi_key_id(midi_keyboard_janko_t *kb, GLuint key_id);
-void midi_keyboard_janko_keys_update(midi_keyboard_janko_t *kb);
-void midi_keyboard_janko_key_set_pressed(midi_keyboard_janko_t *kb, GLuint key_id);
-void midi_keyboard_janko_key_set_unpressed(midi_keyboard_janko_t *kb, GLuint key_id);
+void midi_keyboard_janko_update_key_color(midi_keyboard_janko_t *kb, size_t key_id, double delta_time_ms, midi_keyboard_key_color_t color);
+void midi_keyboard_janko_update_keys(midi_keyboard_janko_t *kb, double delta_time_ms);
+bool midi_keyboard_janko_is_key_pressed(midi_keyboard_janko_t *kb, GLuint key_id);
+void midi_keyboard_janko_set_key_pressed(midi_keyboard_janko_t *kb, GLuint key_id);
+void midi_keyboard_janko_set_key_unpressed(midi_keyboard_janko_t *kb, GLuint key_id);
+
 void midi_keyboard_janko_receive_midi_note_on(midi_keyboard_janko_t *kb, int midi_note_number);
 void midi_keyboard_janko_receive_midi_note_off(midi_keyboard_janko_t *kb, int midi_note_number);
 
