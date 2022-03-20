@@ -1,10 +1,7 @@
 #pragma once
 
 #include <GL/glew.h>
-
-#define NUM_VERTICES_PER_KEY 4
-#define NUM_COLOR_CHANNELS_PER_VERTEX 3
-#define NUM_ELEMENTS_PER_COLOR (NUM_VERTICES_PER_KEY * NUM_COLOR_CHANNELS_PER_VERTEX)
+#include "midi_common.h"
 
 typedef GLfloat midi_keyboard_key_color_t[NUM_ELEMENTS_PER_COLOR];
 
