@@ -4,9 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MIDI_NOTE_C4 60
-#define MIDI_NOTE_A0 21
-
 #define SIZE_VERTEX (NUM_ELEMENTS_PER_VERTEX * sizeof(GLfloat))
 #define SIZE_INDEX (NUM_ELEMENTS_PER_INDEX * sizeof(GLuint))
 #define SIZE_COLOR (NUM_ELEMENTS_PER_COLOR * sizeof(GLfloat))
@@ -44,11 +41,11 @@ static bool is_lowest_midi_note_in_f_row(midi_keyboard_janko_t *kb)
 	return midi_distance_from_c(kb->midi_note_number_lowest) % NUM_JANKO_KEYBOARD_ROWS;
 }
 
-void midi_keyboard_janko_init(midi_keyboard_janko_t *kb, GLuint shader, int width, int num_rows)
+void midi_keyboard_janko_init(midi_keyboard_janko_t *kb, GLuint shader, int width, int num_rows, int midi_note_number_lowest)
 {
 	*kb = (midi_keyboard_janko_t){
 		.width = width,
-		.midi_note_number_lowest = MIDI_NOTE_A0,
+		.midi_note_number_lowest = midi_note_number_lowest,
 		.shader_program = shader,
 		.num_rows = num_rows,
 	};

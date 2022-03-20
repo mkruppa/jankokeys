@@ -17,6 +17,8 @@
 #define NUM_ELEMENTS_PER_TEXTURE_UV (NUM_VERTICES_PER_KEY * NUM_DIMENSIONS_PER_UV)
 
 #define NUM_MIDI_KEYBOARD_KEYS 88
+#define MIDI_NOTE_C4 60
+#define MIDI_NOTE_A0 21
 
 typedef struct midi_keyboard_janko {
 	/* opengl data */
@@ -41,7 +43,7 @@ typedef struct midi_keyboard_janko {
 	int *pressed_keys;
 } midi_keyboard_janko_t;
 
-void midi_keyboard_janko_init(midi_keyboard_janko_t *kb, GLuint shader, int width, int num_rows);
+void midi_keyboard_janko_init(midi_keyboard_janko_t *kb, GLuint shader, int width, int num_rows, int midi_note_number_lowest);
 void midi_keyboard_janko_uninit(midi_keyboard_janko_t *kb);
 
 uv_quad_t *midi_keyboard_janko_key_uv(midi_keyboard_janko_t *kb, GLuint key_id);
