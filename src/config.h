@@ -9,6 +9,7 @@
 typedef struct config {
 	int width;
 	int height;
+	int janko_num_rows;
 	SDL_Scancode sustain_key;
 	int keybinding[SDL_NUM_SCANCODES];
 } config_t;
