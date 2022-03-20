@@ -6,6 +6,7 @@
 #define CONFIG_FILE_PATH "../script/config.lua"
 #define LUA_GLOBAL_VAR_WIDTH "width"
 #define LUA_GLOBAL_VAR_HEIGHT "height"
+#define LUA_GLOBAL_VAR_JANKO_NUM_ROWS "janko_num_rows"
 #define LUA_GLOBAL_VAR_SUSTAIN_KEY "sustain_key"
 #define LUA_GLOBAL_VAR_KEYBINDING "keybinding"
 
@@ -111,6 +112,7 @@ bool config_load(config_t *config)
 		luaJK_dofile(L, CONFIG_FILE_PATH) &&
 		luaJK_get_global_var_int(&config->width, L, LUA_GLOBAL_VAR_WIDTH) &&
 		luaJK_get_global_var_int(&config->height, L, LUA_GLOBAL_VAR_HEIGHT) &&
+		luaJK_get_global_var_int(&config->janko_num_rows, L, LUA_GLOBAL_VAR_JANKO_NUM_ROWS) &&
 		luaJK_get_global_var_int((int*)&config->sustain_key, L, LUA_GLOBAL_VAR_SUSTAIN_KEY) &&
 		luaJK_get_global_var_table_int_int((int*)&config->keybinding, &bounds_check_keybinding, L, LUA_GLOBAL_VAR_KEYBINDING);
 

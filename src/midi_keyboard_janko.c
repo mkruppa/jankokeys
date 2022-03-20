@@ -44,14 +44,14 @@ static bool is_lowest_midi_note_in_f_row(midi_keyboard_janko_t *kb)
 	return midi_distance_from_c(kb->midi_note_number_lowest) % NUM_JANKO_KEYBOARD_ROWS;
 }
 
-void midi_keyboard_janko_init(midi_keyboard_janko_t *kb, GLuint shader, int width, int height)
+void midi_keyboard_janko_init(midi_keyboard_janko_t *kb, GLuint shader, int width, int height, int num_rows)
 {
 	*kb = (midi_keyboard_janko_t){
 		.width = width,
 		.height = height,
 		.midi_note_number_lowest = MIDI_NOTE_A0,
 		.shader_program = shader,
-		.num_rows = 3,
+		.num_rows = num_rows,
 	};
 	assert(kb->num_rows >= MIDI_KEYBOARD_JANKO_MIN_NUM_ROWS);
 	assert(kb->num_rows <= MIDI_KEYBOARD_JANKO_MAX_NUM_ROWS);

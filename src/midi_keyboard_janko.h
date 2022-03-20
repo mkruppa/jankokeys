@@ -42,7 +42,7 @@ typedef struct midi_keyboard_janko {
 	int *pressed_keys;
 } midi_keyboard_janko_t;
 
-void midi_keyboard_janko_init(midi_keyboard_janko_t *kb, GLuint shader, int width, int height);
+void midi_keyboard_janko_init(midi_keyboard_janko_t *kb, GLuint shader, int width, int height, int num_rows);
 void midi_keyboard_janko_uninit(midi_keyboard_janko_t *kb);
 
 uv_quad_t *midi_keyboard_janko_key_uv(midi_keyboard_janko_t *kb, GLuint key_id);

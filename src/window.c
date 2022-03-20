@@ -227,7 +227,7 @@ void window_run(window_t *win)
 {
 	win->shader = shader_program_create_from_file("../shader/simple.vert", "../shader/simple.frag");
 	window_gl_origin_set_bottom_left(win);
-	midi_keyboard_janko_init(&win->janko_keyboard, win->shader, win->config.width, win->config.height);
+	midi_keyboard_janko_init(&win->janko_keyboard, win->shader, win->config.width, win->config.height, win->config.janko_num_rows);
 
 	sdl_clock_start(&win->clock);
 	while (win->is_running) {
