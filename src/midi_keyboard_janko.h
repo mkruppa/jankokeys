@@ -5,18 +5,9 @@
 #define CGLM_DEFINE_PRINTS
 #include <cglm/cglm.h>
 
+#include "midi_common.h"
 #include "midi_keyboard_key_color.h"
 #include "texture_atlas.h"
-
-#define NUM_VERTICES_PER_KEY 4
-#define NUM_DIMENSIONS_PER_VERTEX 3
-#define NUM_COLOR_CHANNELS_PER_VERTEX 3
-#define NUM_DIMENSIONS_PER_UV 2
-#define NUM_ELEMENTS_PER_VERTEX (NUM_VERTICES_PER_KEY * NUM_DIMENSIONS_PER_VERTEX)
-#define NUM_ELEMENTS_PER_INDEX 6
-#define NUM_ELEMENTS_PER_TEXTURE_UV (NUM_VERTICES_PER_KEY * NUM_DIMENSIONS_PER_UV)
-
-#define NUM_MIDI_KEYBOARD_KEYS 88
 
 typedef struct midi_keyboard_janko {
 	/* opengl data */
@@ -36,12 +27,13 @@ typedef struct midi_keyboard_janko {
 	texture_atlas_t texture_atlas;
 
 	GLfloat width;
+	GLfloat height;
 	uint num_rows;
 	int midi_note_number_lowest;
 	int *pressed_keys;
 } midi_keyboard_janko_t;
 
-void midi_keyboard_janko_init(midi_keyboard_janko_t *kb, GLuint shader, int width, int num_rows);
+void midi_keyboard_janko_init(midi_keyboard_janko_t *kb, GLuint shader, int width, int height, int num_rows);
 void midi_keyboard_janko_uninit(midi_keyboard_janko_t *kb);
 
 uv_quad_t *midi_keyboard_janko_key_uv(midi_keyboard_janko_t *kb, GLuint key_id);
