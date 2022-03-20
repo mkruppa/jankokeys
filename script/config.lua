@@ -6,8 +6,8 @@ janko_key_height_over_width_ratio = 3 / 2
 key_width = 32
 num_keys = 88
 width = math.floor((num_keys + 1) * key_width / 2)
-height = math.floor(2 * key_width * janko_key_height_over_width_ratio)
--- height = math.floor(width * (9 / 16))
+-- height = math.floor(2 * key_width * janko_key_height_over_width_ratio)
+height = math.floor(width * (9 / 16))
 
 -- keyboard bindings
 dofile("../script/scancodes.lua")
