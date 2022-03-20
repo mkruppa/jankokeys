@@ -56,10 +56,15 @@ void midi_keyboard_janko_gl_data_destroy(midi_keyboard_janko_t *kb);
 void midi_keyboard_janko_gl_init(midi_keyboard_janko_t *kb, GLuint shader);
 void midi_keyboard_janko_gl_uninit(midi_keyboard_janko_t *kb);
 
-GLuint midi_keyboard_janko_midi_key_id(midi_keyboard_janko_t *kb, GLuint key_id);
+GLuint midi_keyboard_janko_key_id(midi_keyboard_janko_t *kb, GLuint midi_key_id);
+bool midi_keyboard_janko_is_top_row_key(GLuint midi_key_id);
+
 void midi_keyboard_janko_keys_update(midi_keyboard_janko_t *kb);
-void midi_keyboard_janko_key_set_pressed(midi_keyboard_janko_t *kb, GLuint key_id);
-void midi_keyboard_janko_key_set_unpressed(midi_keyboard_janko_t *kb, GLuint key_id);
+
+void midi_keyboard_janko_key_set_pressed(midi_keyboard_janko_t *kb, GLuint midi_key_id);
+void midi_keyboard_janko_key_set_unpressed(midi_keyboard_janko_t *kb, GLuint midi_key_id);
+bool midi_keyboard_janko_is_key_pressed(midi_keyboard_janko_t *kb, GLuint midi_key_id);
+
 void midi_keyboard_janko_receive_midi_note_on(midi_keyboard_janko_t *kb, int midi_note_number);
 void midi_keyboard_janko_receive_midi_note_off(midi_keyboard_janko_t *kb, int midi_note_number);
 

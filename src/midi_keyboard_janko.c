@@ -36,14 +36,36 @@ const midi_keyboard_key_color_t MIDI_KEYBOARD_KEY_COLOR_BLUE = {
 	 0.0F, 0.0F, 1.0F,
 };
 
+#define NUM_KEYS_PER_OCTAVE 12
+#define NUM_JANKO_KEYBOARD_ROWS 2
+#define NUM_KEYS_PER_OCTAVE_PER_ROW (NUM_KEYS_PER_OCTAVE / NUM_JANKO_KEYBOARD_ROWS)
+static int key_types_f_row[NUM_KEYS_PER_OCTAVE_PER_ROW] = { 1, 1, 0, 0, 0, 0 };
+static int key_types_c_row[NUM_KEYS_PER_OCTAVE_PER_ROW] = { 0, 0, 0, 1, 1, 1 };
+static int *key_types_top_row = key_types_f_row;
+static int *key_types_bottom_row = key_types_c_row;
+
+static bool is_bottom_row_indented;
+
+static int midi_distance_from_c(int midi_note_number)
+{
+	return midi_note_number % NUM_KEYS_PER_OCTAVE; // midi note number 0 is a c key
+}
+
+static bool is_lowest_midi_note_in_f_row(midi_keyboard_janko_t *kb)
+{
+	return midi_distance_from_c(kb->midi_note_number_lowest) % NUM_JANKO_KEYBOARD_ROWS;
+}
+
 void midi_keyboard_janko_init(midi_keyboard_janko_t *kb, GLuint shader, int width, int height)
 {
 	*kb = (midi_keyboard_janko_t){
 		.width = width,
 		.height = height,
-		.midi_note_number_lowest = MIDI_NOTE_A0 + 1,
+		.midi_note_number_lowest = MIDI_NOTE_A0,
 		.shader_program = shader,
 	};
+
+	is_bottom_row_indented = is_lowest_midi_note_in_f_row(kb);
 
 	texture_atlas_load("../img/spritesheet.png", &kb->texture_atlas);
 	kb->texture_atlas.tw = 32;
@@ -53,7 +75,8 @@ void midi_keyboard_janko_init(midi_keyboard_janko_t *kb, GLuint shader, int widt
 
 	kb->keys_pressed = calloc(NUM_MIDI_KEYBOARD_KEYS, sizeof(*kb->keys_pressed));
 	midi_keyboard_janko_gl_data_create(kb);
-	midi_keyboard_janko_gl_init(kb, shader);}
+	midi_keyboard_janko_gl_init(kb, shader);
+}
 
 void midi_keyboard_janko_uninit(midi_keyboard_janko_t *kb)
 {
@@ -65,16 +88,16 @@ void midi_keyboard_janko_uninit(midi_keyboard_janko_t *kb)
 
 uv_quad_t *midi_keyboard_janko_key_uv(midi_keyboard_janko_t *kb, GLuint key_id)
 {
-	const GLuint num_keys_bottom_row = midi_keyboard_janko_num_keys_row_bottom(kb);
-	static const int key_types_odd_row[] = { 1, 1, 0, 0, 0, 0 };
-	static const int key_types_even_row[] = { 0, 0, 0, 1, 1, 1 };
-	const int offset = 5;
+	const div_t row_distance = div(midi_distance_from_c(kb->midi_note_number_lowest), NUM_JANKO_KEYBOARD_ROWS);
+	const int offset = row_distance.quot + row_distance.rem;
+	const int offset_top_row = -row_distance.rem;
 
+	const GLuint num_keys_bottom_row = midi_keyboard_janko_num_keys_row_bottom(kb);
 	int key_type;
-	if (key_id >= num_keys_bottom_row) {
-		key_type = key_types_odd_row[(key_id - num_keys_bottom_row + offset) % 6];
+	if (key_id >= num_keys_bottom_row) { // top row key
+		key_type = key_types_top_row[(key_id - num_keys_bottom_row + offset + offset_top_row) % NUM_KEYS_PER_OCTAVE_PER_ROW];
 	} else {
-		key_type = key_types_even_row[(key_id + offset) % 6];
+		key_type = key_types_bottom_row[(key_id + offset) % NUM_KEYS_PER_OCTAVE_PER_ROW];
 	}
 
 	return key_type ? &uv_key_black : &uv_key_white;
@@ -93,7 +116,7 @@ void midi_keyboard_janko_gl_data_create(midi_keyboard_janko_t *kb)
 			│ \ │	1st triangle: 0 1 2 (lower left)
 			0───1	2nd triangle: 2 1 3 (upper right)
 
-		The corresponding midi note numbers (in hexadecimal) for the janko keys are:
+		The corresponding midi note numbers (in hexadecimal) for the janko keys are (if bottom row is not indented):
 			 1 3 5 7 9 B	<-- odd row (C#, D#, F, G, A, B)
 			0 2 4 6 8 A	<-- even row (C, D, E, F#, G#, A#)
 	*/
@@ -110,12 +133,19 @@ void midi_keyboard_janko_gl_data_create(midi_keyboard_janko_t *kb)
 		GLfloat y1 = 0.0F;
 		GLfloat y2 = key_height;
 
+		bool is_top_row_key = i >= num_keys_bottom_row;
 		GLfloat k = i;
-		if (i >= num_keys_bottom_row) { // top row key
-			k -= num_keys_bottom_row - 0.5F;
+		if (is_top_row_key) {
+			k -= num_keys_bottom_row;
 			y1 += key_height;
 			y2 += key_height;
 		}
+		if (is_bottom_row_indented) {
+			k += is_top_row_key ? 0.0F : 0.5F;
+		} else {
+			k += is_top_row_key ? 0.5F : 0.0F;
+		}
+
 		GLfloat x1 = k * key_width;
 		GLfloat x2 = x1 + key_width;
 
@@ -201,23 +231,29 @@ void midi_keyboard_janko_gl_uninit(midi_keyboard_janko_t *kb)
 	glDeleteBuffers(1, &kb->vbo_texture_uvs);
 }
 
-GLuint midi_keyboard_janko_midi_key_id(midi_keyboard_janko_t *kb, GLuint key_id)
+GLuint midi_keyboard_janko_key_id(midi_keyboard_janko_t *kb, GLuint midi_key_id)
 {
-	GLuint midi_key_id = key_id / 2;
-	if (key_id % 2 != 0) { // top row key since key_id is odd
-		midi_key_id += midi_keyboard_janko_num_keys_row_bottom(kb);
+	GLuint key_id = midi_key_id / 2;
+	if (midi_keyboard_janko_is_top_row_key(midi_key_id)) {
+		key_id += midi_keyboard_janko_num_keys_row_bottom(kb);
 	}
-	return midi_key_id;
+	return key_id;
+}
+
+bool midi_keyboard_janko_is_top_row_key(GLuint midi_key_id)
+{
+	bool is_midi_key_id_odd = midi_key_id % 2;
+	return !is_bottom_row_indented ? is_midi_key_id_odd : !is_midi_key_id_odd;
 }
 
 void midi_keyboard_janko_keys_update(midi_keyboard_janko_t *kb)
 {
-	for(size_t key_id = 0; key_id < NUM_MIDI_KEYBOARD_KEYS; ++key_id) {
-		GLuint midi_key_id = midi_keyboard_janko_midi_key_id(kb, key_id);
-		if (kb->keys_pressed[key_id]) {
-			memcpy(&kb->colors[midi_key_id * NUM_ELEMENTS_PER_COLOR], MIDI_KEYBOARD_KEY_COLOR_RED, SIZE_COLOR);
+	for(size_t midi_key_id = 0; midi_key_id < NUM_MIDI_KEYBOARD_KEYS; ++midi_key_id) {
+		GLuint key_id = midi_keyboard_janko_key_id(kb, midi_key_id);
+		if (midi_keyboard_janko_is_key_pressed(kb, midi_key_id)) {
+			memcpy(&kb->colors[key_id * NUM_ELEMENTS_PER_COLOR], MIDI_KEYBOARD_KEY_COLOR_RED, SIZE_COLOR);
 		} else {
-			memcpy(&kb->colors[midi_key_id * NUM_ELEMENTS_PER_COLOR], MIDI_KEYBOARD_KEY_COLOR_WHITE, SIZE_COLOR);
+			memcpy(&kb->colors[key_id * NUM_ELEMENTS_PER_COLOR], MIDI_KEYBOARD_KEY_COLOR_WHITE, SIZE_COLOR);
 		}
 	}
 
@@ -228,14 +264,19 @@ void midi_keyboard_janko_keys_update(midi_keyboard_janko_t *kb)
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void midi_keyboard_janko_key_set_pressed(midi_keyboard_janko_t *kb, GLuint key_id)
+void midi_keyboard_janko_key_set_pressed(midi_keyboard_janko_t *kb, GLuint midi_key_id)
 {
-	if (key_id < NUM_MIDI_KEYBOARD_KEYS) { kb->keys_pressed[key_id] = 1; }
+	if (midi_key_id < NUM_MIDI_KEYBOARD_KEYS) { kb->keys_pressed[midi_key_id] = 1; }
 }
 
-void midi_keyboard_janko_key_set_unpressed(midi_keyboard_janko_t *kb, GLuint key_id)
+void midi_keyboard_janko_key_set_unpressed(midi_keyboard_janko_t *kb, GLuint midi_key_id)
 {
-	if (key_id < NUM_MIDI_KEYBOARD_KEYS) { kb->keys_pressed[key_id] = 0; }
+	if (midi_key_id < NUM_MIDI_KEYBOARD_KEYS) { kb->keys_pressed[midi_key_id] = 0; }
+}
+
+bool midi_keyboard_janko_is_key_pressed(midi_keyboard_janko_t *kb, GLuint midi_key_id)
+{
+	return kb->keys_pressed[midi_key_id] == 1;
 }
 
 void midi_keyboard_janko_receive_midi_note_on(midi_keyboard_janko_t *kb, int midi_note_number)
@@ -276,7 +317,7 @@ void midi_keyboard_janko_render(midi_keyboard_janko_t *kb, mat4 *MVP)
 	// /* draw row 3 */
 	// glm_translate(mat, (vec4){0.0F, 2 * key_height, 0.0F, 0.0F});
 	// glUniformMatrix4fv(loc, 1, GL_FALSE, (GLfloat*)mat);
-	// glDrawElements(GL_TRIANGLES, midi_keyboard_janko_num_keys_row_bottom(kb) * NUM_ELEMENTS_PER_INDEX, GL_UNSIGNED_INT, 0);
+	// glDrawElements(GL_TRIANGLES, midi_keyboard_janko_num_keys_row_bottom() * NUM_ELEMENTS_PER_INDEX, GL_UNSIGNED_INT, 0);
 
 	// /* draw rows 3 and 4 */
 	// glm_translate(mat, (vec4){0.0F, 2 * key_height, 0.0F, 0.0F});
