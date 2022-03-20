@@ -36,13 +36,12 @@ typedef struct midi_keyboard_janko {
 	texture_atlas_t texture_atlas;
 
 	GLfloat width;
-	GLfloat height; // TODO unused
 	uint num_rows;
 	int midi_note_number_lowest;
 	int *pressed_keys;
 } midi_keyboard_janko_t;
 
-void midi_keyboard_janko_init(midi_keyboard_janko_t *kb, GLuint shader, int width, int height);
+void midi_keyboard_janko_init(midi_keyboard_janko_t *kb, GLuint shader, int width);
 void midi_keyboard_janko_uninit(midi_keyboard_janko_t *kb);
 
 uv_quad_t *midi_keyboard_janko_key_uv(midi_keyboard_janko_t *kb, GLuint key_id);

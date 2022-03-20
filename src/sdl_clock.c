@@ -1,4 +1,5 @@
 #include "sdl_clock.h"
+#include <SDL_timer.h>
 
 #define MILLISECONDS_IN_A_SECOND 1000
 
