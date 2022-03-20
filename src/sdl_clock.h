@@ -9,8 +9,8 @@ typedef struct sdl_clock {
 } sdl_clock_t;
 
 sdl_tick_t sdl_clock_tick();
+double sdl_clock_tick_delta_to_ms(sdl_tick_t delta);
 
 void sdl_clock_start(sdl_clock_t *clock);
-double sdl_clock_tick_delta_to_ms(sdl_tick_t delta);
-double sdl_clock_elapsed_ms(sdl_clock_t *clock);
 double sdl_clock_restart(sdl_clock_t *clock);
+double sdl_clock_elapsed_ms(sdl_clock_t *clock);
