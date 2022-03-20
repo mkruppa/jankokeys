@@ -73,7 +73,7 @@ bool bounds_check_keybinding(int scan_code, int midi_note_number)
 	return true;
 }
 
-bool luaJK_get_global_var_table_int_int(int *out, bool (*bounds_check)(int, int), lua_State *L, const char *var)
+bool luaJK_get_global_var_table_int_int(int *out, bounds_check_t bounds_check, lua_State *L, const char *var)
 {
 	lua_getglobal(L, var);
 	if (!lua_istable(L, -1)) {
