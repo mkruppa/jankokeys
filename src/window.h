@@ -10,6 +10,7 @@
 #include "alsa_seq.h"
 #include "midi_keyboard_janko.h"
 #include "sdl_clock.h"
+#include "piano_roll.h"
 
 typedef struct window {
 	/* sdl opengl */
@@ -28,7 +29,9 @@ typedef struct window {
 	/* opengl */
 	mat4 MVP;
 	GLuint shader;
+	texture_atlas_t texture_atlas;
 	midi_keyboard_janko_t janko_keyboard;
+	piano_roll_t piano_roll;
 } window_t;
 
 void window_sdl_print_error(void);
@@ -51,7 +54,7 @@ bool window_create(window_t *win, const char *title);
 void window_destroy(window_t *win);
 
 void window_handle_events(window_t *win);
-void window_update(window_t *win);
+void window_update(window_t *win, double run_time_ms, double delta_time_ms);
 void window_run(window_t *win);
 
 void window_gl_origin_set_bottom_left(window_t *win);

@@ -27,7 +27,8 @@ add_executable(${PROJECT_NAME}
 	src/texture_atlas.c
 	src/sdl_clock.c
 	src/easing.c
-	src/midi_keyboard_key_color.c)
+	src/midi_keyboard_key_color.c
+	src/piano_roll.c)
 
 target_link_libraries(${PROJECT_NAME}
 	ALSA::ALSA

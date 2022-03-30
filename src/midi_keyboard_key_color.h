@@ -1,6 +1,6 @@
 #pragma once
 
-#include <GL/glew.h>
+#include <GL/gl.h>
 #include "midi_common.h"
 
 typedef GLfloat midi_keyboard_key_color_t[NUM_ELEMENTS_PER_COLOR];
