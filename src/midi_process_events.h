@@ -1,5 +1,6 @@
 #pragma once
-#include "alsa_seq.h"
-#include "midi_keyboard_janko.h"
 
-void midi_process_events(midi_seq_t *seq, midi_keyboard_janko_t *kb);
+struct window;
+typedef struct window window_t;
+
+void midi_process_events(window_t *win, double run_time_ms);

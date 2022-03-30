@@ -5,8 +5,8 @@
 #define CGLM_DEFINE_PRINTS
 #include <cglm/cglm.h>
 
-#include "midi_keyboard_janko.h"
 #include "shader.h"
+#include "midi_keyboard_janko.h"
 #include "midi_process_events.h"
 
 #define WINDOW_GL_CONTEXT_MAJOR_VERSION 4
@@ -209,16 +209,18 @@ void window_handle_events(window_t *win)
 	}
 }
 
-void window_update(window_t *win)
+void window_update(window_t *win, double run_time_ms, double delta_time_ms)
 {
-	double delta_time_ms = sdl_clock_restart(&win->clock);
-
 	glClearColor(0.0F, 0.0F, 0.0F, 1.0F);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glUseProgram(win->shader);
+
 	midi_keyboard_janko_update_keys(&win->janko_keyboard, delta_time_ms);
 	midi_keyboard_janko_render(&win->janko_keyboard, &win->MVP);
+
+	piano_roll_update(&win->piano_roll, run_time_ms);
+	piano_roll_render(&win->piano_roll,  &win->MVP);
 
 	SDL_GL_SwapWindow(win->sdl_window);
 }
@@ -227,16 +229,35 @@ void window_run(window_t *win)
 {
 	win->shader = shader_program_create_from_file("../shader/simple.vert", "../shader/simple.frag");
 	window_gl_origin_set_bottom_left(win);
-	midi_keyboard_janko_init(&win->janko_keyboard, win->shader, win->config.width, win->config.height, win->config.janko_num_rows, MIDI_NOTE_A0);
+
+	texture_atlas_create(&win->texture_atlas, "../img/spritesheet.png");
+	texture_atlas_set_tile_size(&win->texture_atlas, 32, 48);
+
+	midi_keyboard_janko_init(&win->janko_keyboard, &win->texture_atlas, win->shader, win->config.width, win->config.height, win->config.janko_num_rows, MIDI_NOTE_A0);
+
+	piano_roll_init(&win->piano_roll,
+			&win->texture_atlas,
+			win->shader,
+			win->janko_keyboard.num_rows * midi_keyboard_janko_key_height(&win->janko_keyboard),
+			midi_keyboard_janko_key_width(&win->janko_keyboard),
+			MIDI_NOTE_A0);
 
 	sdl_clock_start(&win->clock);
+	sdl_tick_t tick_prev = sdl_clock_elapsed(&win->clock);
 	while (win->is_running) {
-		window_update(win);
+		sdl_tick_t tick_now = sdl_clock_elapsed(&win->clock);
+		double run_time_ms = sdl_clock_tick_to_ms(tick_now);
+		double delta_time_ms = sdl_clock_tick_to_ms(tick_now - tick_prev);
+		tick_prev = tick_now;
+
+		window_update(win, run_time_ms, delta_time_ms);
 		window_handle_events(win);
-		midi_process_events(win->seq, &win->janko_keyboard);
+		midi_process_events(win, run_time_ms);
 	}
 
+	piano_roll_uninit(&win->piano_roll);
 	midi_keyboard_janko_uninit(&win->janko_keyboard);
+	texture_atlas_destroy(&win->texture_atlas);
 	shader_program_destroy(win->shader);
 }
 

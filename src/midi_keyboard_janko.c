@@ -4,11 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define SIZE_VERTEX (NUM_ELEMENTS_PER_VERTEX * sizeof(GLfloat))
-#define SIZE_INDEX (NUM_ELEMENTS_PER_INDEX * sizeof(GLuint))
-#define SIZE_COLOR (NUM_ELEMENTS_PER_COLOR * sizeof(GLfloat))
-#define SIZE_TEXTURE_UV (NUM_ELEMENTS_PER_TEXTURE_UV * sizeof(GLfloat))
-
 #define JANKO_KEY_HEIGHT_OVER_WIDTH_RATIO (3.0F / 2.0F)
 #define MIDI_KEYBOARD_JANKO_MIN_NUM_ROWS 2
 #define MIDI_KEYBOARD_JANKO_MAX_NUM_ROWS 6
@@ -41,7 +36,7 @@ static bool is_lowest_midi_note_in_f_row(midi_keyboard_janko_t *kb)
 	return midi_distance_from_c(kb->midi_note_number_lowest) % NUM_JANKO_KEYBOARD_ROWS;
 }
 
-void midi_keyboard_janko_init(midi_keyboard_janko_t *kb, GLuint shader, int width, int height, int num_rows, int midi_note_number_lowest)
+void midi_keyboard_janko_init(midi_keyboard_janko_t *kb, texture_atlas_t *texture_atlas, GLuint shader, int width, int height, int num_rows, int midi_note_number_lowest)
 {
 	*kb = (midi_keyboard_janko_t){
 		.width = width,
@@ -58,11 +53,8 @@ void midi_keyboard_janko_init(midi_keyboard_janko_t *kb, GLuint shader, int widt
 
 	is_bottom_row_indented = is_lowest_midi_note_in_f_row(kb);
 
-	texture_atlas_load("../img/spritesheet.png", &kb->texture_atlas);
-	kb->texture_atlas.tw = 32;
-	kb->texture_atlas.th = 48;
-	texture_atlas_get_uv_quad(&kb->texture_atlas, 0, 0, uv_key_black);
-	texture_atlas_get_uv_quad(&kb->texture_atlas, 1, 0, uv_key_white);
+	texture_atlas_get_uv_quad(texture_atlas, 0, 0, uv_key_black);
+	texture_atlas_get_uv_quad(texture_atlas, 1, 0, uv_key_white);
 
 	kb->pressed_keys = calloc(NUM_MIDI_KEYBOARD_KEYS, sizeof(*kb->pressed_keys));
 	midi_keyboard_janko_gl_data_create(kb);
@@ -71,7 +63,6 @@ void midi_keyboard_janko_init(midi_keyboard_janko_t *kb, GLuint shader, int widt
 
 void midi_keyboard_janko_uninit(midi_keyboard_janko_t *kb)
 {
-	glDeleteTextures(1, &kb->texture_atlas.texture_id);
 	free(kb->pressed_keys);
 	midi_keyboard_janko_gl_data_destroy(kb);
 	midi_keyboard_janko_gl_uninit(kb);
@@ -117,8 +108,8 @@ void midi_keyboard_janko_gl_data_create(midi_keyboard_janko_t *kb)
 	kb->texture_uvs = calloc(NUM_MIDI_KEYBOARD_KEYS, SIZE_TEXTURE_UV);
 
 	const GLuint num_keys_bottom_row = midi_keyboard_janko_num_keys_row_bottom(kb);
-	const GLfloat key_width = floor(midi_keyboard_janko_key_width(kb));
-	const GLfloat key_height = floor(key_width * JANKO_KEY_HEIGHT_OVER_WIDTH_RATIO);
+	const GLfloat key_width = midi_keyboard_janko_key_width(kb);
+	const GLfloat key_height = midi_keyboard_janko_key_height(kb);
 
 	for (size_t i = 0; i < NUM_MIDI_KEYBOARD_KEYS; ++i) {
 		GLfloat y1 = 0.0F;
@@ -269,6 +260,11 @@ void midi_keyboard_janko_update_keys(midi_keyboard_janko_t *kb, double delta_tim
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
+void midi_keyboard_janko_reset_keys(midi_keyboard_janko_t *kb)
+{
+	for (size_t key_id = 0; key_id < NUM_MIDI_KEYBOARD_KEYS; ++key_id) { kb->pressed_keys[key_id] = 0; }
+}
+
 bool midi_keyboard_janko_is_key_pressed(midi_keyboard_janko_t *kb, GLuint midi_key_id)
 {
 	return kb->pressed_keys[midi_key_id] == MIDI_KEYBOARD_KEY_PRESSED;
@@ -296,7 +292,12 @@ void midi_keyboard_janko_receive_midi_note_off(midi_keyboard_janko_t *kb, int mi
 
 GLfloat midi_keyboard_janko_key_width(midi_keyboard_janko_t *kb)
 {
-	return (kb->width / (NUM_MIDI_KEYBOARD_KEYS + 1U)) * 2.0F;
+	return floor((kb->width / (NUM_MIDI_KEYBOARD_KEYS + 1U)) * 2.0F);
+}
+
+GLfloat midi_keyboard_janko_key_height(midi_keyboard_janko_t *kb)
+{
+	return floor(midi_keyboard_janko_key_width(kb) * JANKO_KEY_HEIGHT_OVER_WIDTH_RATIO);
 }
 
 GLuint midi_keyboard_janko_num_keys_row_bottom()
@@ -320,8 +321,7 @@ void midi_keyboard_janko_render(midi_keyboard_janko_t *kb, mat4 *MVP)
 	/* draw remaining rows */
 	uint num_remaining_rows = kb->num_rows - MIDI_KEYBOARD_JANKO_MIN_NUM_ROWS;
 	while(num_remaining_rows > 0) {
-		const GLfloat key_height = midi_keyboard_janko_key_width(kb) * JANKO_KEY_HEIGHT_OVER_WIDTH_RATIO;
-		glm_translate(mat, (vec4){0.0F, MIDI_KEYBOARD_JANKO_MIN_NUM_ROWS * key_height, 0.0F, 0.0F});
+		glm_translate(mat, (vec4){0.0F, MIDI_KEYBOARD_JANKO_MIN_NUM_ROWS * midi_keyboard_janko_key_height(kb), 0.0F, 0.0F});
 		glUniformMatrix4fv(loc, 1, GL_FALSE, (GLfloat*)mat);
 
 		if (num_remaining_rows == 1) {

@@ -1,7 +1,7 @@
 #include "texture_atlas.h"
 #include <SDL_image.h>
 
-void texture_atlas_load(const char* filename, texture_atlas_t *dst_texture_atlas)
+void texture_atlas_create(texture_atlas_t *texture_atlas, const char* filename)
 {
 	SDL_Surface *img = IMG_Load(filename);
 	if (img == NULL) {
@@ -18,11 +18,22 @@ void texture_atlas_load(const char* filename, texture_atlas_t *dst_texture_atlas
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img->w, img->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, img->pixels);
 
-	dst_texture_atlas->w = img->w;
-	dst_texture_atlas->h = img->h;
-	dst_texture_atlas->texture_id = texture_id;
+	texture_atlas->w = img->w;
+	texture_atlas->h = img->h;
+	texture_atlas->texture_id = texture_id;
 
 	free(img);
+}
+
+void texture_atlas_destroy(texture_atlas_t *texture_atlas)
+{
+	glDeleteTextures(1, &texture_atlas->texture_id);
+}
+
+void texture_atlas_set_tile_size(texture_atlas_t *texture_atlas, int tw, int th)
+{
+	texture_atlas->tw = tw;
+	texture_atlas->th = th;
 }
 
 void texture_atlas_get_uv_quad(texture_atlas_t *texture_atlas, int x, int y, uv_quad_t dst_uv)

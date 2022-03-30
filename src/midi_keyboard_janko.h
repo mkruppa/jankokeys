@@ -27,7 +27,6 @@ typedef struct midi_keyboard_janko {
 	GLuint vbo_texture_uvs;
 
 	GLuint shader_program;
-	texture_atlas_t texture_atlas;
 
 	GLfloat width;
 	GLfloat height;
@@ -36,7 +35,7 @@ typedef struct midi_keyboard_janko {
 	int *pressed_keys;
 } midi_keyboard_janko_t;
 
-void midi_keyboard_janko_init(midi_keyboard_janko_t *kb, GLuint shader, int width, int height, int num_rows, int midi_note_number_lowest);
+void midi_keyboard_janko_init(midi_keyboard_janko_t *kb, texture_atlas_t *texture_atlas, GLuint shader, int width, int height, int num_rows, int midi_note_number_lowest);
 void midi_keyboard_janko_uninit(midi_keyboard_janko_t *kb);
 
 uv_quad_t *midi_keyboard_janko_key_uv(midi_keyboard_janko_t *kb, GLuint key_id);
@@ -51,6 +50,7 @@ bool midi_keyboard_janko_is_top_row_key(GLuint midi_key_id);
 
 void midi_keyboard_janko_update_key_color(midi_keyboard_janko_t *kb, size_t midi_key_id, double delta_time_ms, midi_keyboard_key_color_t color);
 void midi_keyboard_janko_update_keys(midi_keyboard_janko_t *kb, double delta_time_ms);
+void midi_keyboard_janko_reset_keys(midi_keyboard_janko_t *kb);
 
 bool midi_keyboard_janko_is_key_pressed(midi_keyboard_janko_t *kb, GLuint midi_key_id);
 void midi_keyboard_janko_set_key_pressed(midi_keyboard_janko_t *kb, GLuint midi_key_id);
@@ -60,6 +60,7 @@ void midi_keyboard_janko_receive_midi_note_on(midi_keyboard_janko_t *kb, int mid
 void midi_keyboard_janko_receive_midi_note_off(midi_keyboard_janko_t *kb, int midi_note_number);
 
 GLfloat midi_keyboard_janko_key_width(midi_keyboard_janko_t *kb);
+GLfloat midi_keyboard_janko_key_height(midi_keyboard_janko_t *kb);
 GLuint midi_keyboard_janko_num_keys_row_bottom();
 
 void midi_keyboard_janko_render(midi_keyboard_janko_t *kb, mat4 *MVP);
